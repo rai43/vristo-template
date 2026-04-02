@@ -741,21 +741,21 @@ const RegistrationFlow = () => {
                     operationIndex,
                     notes,
                 });
-                // Robustly extract the ID — handle _id, id, or nested structures
-                regId = reg?._id || (reg as any)?.id || null;
+                // Robustly extract the ID — handle _id, id, data._id, or nested structures
+                regId = reg?._id || (reg as any)?.id || (reg as any)?.data?._id || (reg as any)?.data?.id || null;
 
                 // Fallback: if create succeeded but response lacks _id,
                 // query the server for the just-created registration
                 if (!regId) {
-                    console.warn('[Registration] Create response missing _id, querying server...');
+                    console.warn('[Registration] Create response missing _id, querying server. Response keys:', reg ? Object.keys(reg) : 'null');
                     try {
                         const regs = await registrationsApi.getByOrder(selectedOrder._id);
                         const justCreated = regs.find(
                             (r) => r.operationIndex === operationIndex && r.status === 'draft'
                         );
                         if (justCreated) {
-                            regId = justCreated._id;
-                            console.log('[Registration] Found just-created registration via fallback:', regId);
+                            regId = justCreated._id || (justCreated as any)?.id;
+                            console.warn('[Registration] Found just-created registration via fallback:', regId);
                         }
                     } catch (fallbackErr) {
                         console.error('[Registration] Fallback query failed:', fallbackErr);
@@ -763,8 +763,16 @@ const RegistrationFlow = () => {
                 }
 
                 if (!regId) {
-                    console.error('[Registration] Create response:', JSON.stringify(reg));
-                    throw new Error('Impossible de créer l\'enregistrement. Veuillez réessayer.');
+                    // Show debug info on screen so we can diagnose on mobile
+                    const debugInfo = JSON.stringify(reg, null, 2)?.slice(0, 300) || 'null';
+                    await Swal.fire({
+                        icon: 'error',
+                        title: 'Erreur technique',
+                        html: `<p>L'enregistrement a été créé mais l'identifiant est manquant.</p>
+                               <pre style="text-align:left;font-size:10px;max-height:150px;overflow:auto;background:#f5f5f5;padding:8px;border-radius:4px">${debugInfo}</pre>`,
+                        confirmButtonText: 'Réessayer',
+                    });
+                    throw new Error('_id missing from create response');
                 }
                 setRegistrationId(regId); // Persist immediately
                 // Also persist to localStorage
