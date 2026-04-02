@@ -117,30 +117,47 @@ export const registrationsApi = {
     create: async (data: { orderId: string; clientId: string; operationIndex?: number; notes?: string }): Promise<ArticleRegistration> => {
         // Step 1: Send the POST to create the registration
         const res = await apiClient.post(BASE, data);
-
-        // Step 2: Try to extract _id from the response
         const body = res.data;
+
+        // Step 2: Try to extract _id from response
+        // Backend now returns { ok, _id, data } with _id at top level
+        const topLevelId = body?._id;
         const reg = body?.data ?? body;
-        const directId = reg?._id || reg?.id || body?._id;
-        if (directId) {
-            if (reg && !reg._id) reg._id = directId;
-            return reg as ArticleRegistration;
+        const regId = topLevelId || reg?._id || reg?.id;
+
+        if (regId) {
+            const result = (reg && typeof reg === 'object') ? reg : {};
+            result._id = regId;
+            return result as ArticleRegistration;
         }
 
-        // Step 3: Response didn't contain _id — query the server to find it
-        // This handles the case where the Next.js proxy strips/mangles the response
-        console.warn('[registrationsApi.create] Response missing _id, fetching by order...');
+        // Step 3: Fallback — query the server to find the just-created draft
+        console.warn('[registrationsApi.create] No _id in response, querying by order...');
         const byOrder = await apiClient.get(`${BASE}/by-order/${data.orderId}`);
-        const regs: ArticleRegistration[] = byOrder.data?.data ?? byOrder.data ?? [];
-        const match = regs.find(
-            (r) => r.operationIndex === (data.operationIndex ?? 0) && r.status === 'draft'
-        );
-        if (match?._id) {
-            return match;
+        const list: any[] = byOrder.data?.data ?? byOrder.data ?? [];
+        const opIdx = data.operationIndex ?? 0;
+
+        // Find a draft matching this operationIndex (handle undefined/null/0)
+        const match = list.find((r: any) => {
+            if (r.status !== 'draft') return false;
+            const rIdx = r.operationIndex ?? 0;
+            return rIdx === opIdx;
+        });
+
+        if (match?._id || match?.id) {
+            if (!match._id) match._id = match.id;
+            return match as ArticleRegistration;
         }
 
-        // Step 4: Last resort — return whatever we got, let caller handle the error
-        console.error('[registrationsApi.create] Could not resolve _id. Response:', JSON.stringify(body)?.slice(0, 300));
+        // Step 4: Last resort — pick the most recent draft for this order
+        const anyDraft = list.find((r: any) => r.status === 'draft');
+        if (anyDraft?._id || anyDraft?.id) {
+            if (!anyDraft._id) anyDraft._id = anyDraft.id;
+            console.warn('[registrationsApi.create] Using most recent draft:', anyDraft._id);
+            return anyDraft as ArticleRegistration;
+        }
+
+        console.error('[registrationsApi.create] All fallbacks failed. Response:', JSON.stringify(body)?.slice(0, 300));
         return (reg || {}) as ArticleRegistration;
     },
 
