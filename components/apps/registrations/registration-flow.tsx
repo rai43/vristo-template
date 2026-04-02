@@ -743,9 +743,28 @@ const RegistrationFlow = () => {
                 });
                 // Robustly extract the ID — handle _id, id, or nested structures
                 regId = reg?._id || (reg as any)?.id || null;
+
+                // Fallback: if create succeeded but response lacks _id,
+                // query the server for the just-created registration
                 if (!regId) {
-                    console.error('[Registration] Create response missing _id. Full response:', JSON.stringify(reg));
-                    throw new Error('Le serveur n\'a pas retourné d\'identifiant pour l\'enregistrement. Veuillez réessayer.');
+                    console.warn('[Registration] Create response missing _id, querying server...');
+                    try {
+                        const regs = await registrationsApi.getByOrder(selectedOrder._id);
+                        const justCreated = regs.find(
+                            (r) => r.operationIndex === operationIndex && r.status === 'draft'
+                        );
+                        if (justCreated) {
+                            regId = justCreated._id;
+                            console.log('[Registration] Found just-created registration via fallback:', regId);
+                        }
+                    } catch (fallbackErr) {
+                        console.error('[Registration] Fallback query failed:', fallbackErr);
+                    }
+                }
+
+                if (!regId) {
+                    console.error('[Registration] Create response:', JSON.stringify(reg));
+                    throw new Error('Impossible de créer l\'enregistrement. Veuillez réessayer.');
                 }
                 setRegistrationId(regId); // Persist immediately
                 // Also persist to localStorage

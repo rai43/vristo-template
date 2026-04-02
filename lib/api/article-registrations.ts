@@ -116,7 +116,20 @@ export const registrationsApi = {
     /** Create new registration (draft) */
     create: async (data: { orderId: string; clientId: string; operationIndex?: number; notes?: string }): Promise<ArticleRegistration> => {
         const res = await apiClient.post(BASE, data);
-        return res.data.data;
+        // The backend returns { ok: true, data: reg }
+        // But handle any response format robustly:
+        //   res.data         = HTTP body (could be { ok, data: reg } or reg directly)
+        //   res.data.data    = reg (when wrapped)
+        const body = res.data;
+        const reg = body?.data ?? body;
+        // Ensure _id is present (Mongoose may serialize as _id or id)
+        if (reg && !reg._id && reg.id) {
+            reg._id = reg.id;
+        }
+        if (!reg?._id) {
+            console.error('[registrationsApi.create] Unexpected response structure:', JSON.stringify(body).slice(0, 500));
+        }
+        return reg as ArticleRegistration;
     },
 
     /** List registrations */
