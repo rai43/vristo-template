@@ -115,21 +115,33 @@ export const registrationsApi = {
 
     /** Create new registration (draft) */
     create: async (data: { orderId: string; clientId: string; operationIndex?: number; notes?: string }): Promise<ArticleRegistration> => {
+        // Step 1: Send the POST to create the registration
         const res = await apiClient.post(BASE, data);
-        // The backend returns { ok: true, data: reg }
-        // But handle any response format robustly:
-        //   res.data         = HTTP body (could be { ok, data: reg } or reg directly)
-        //   res.data.data    = reg (when wrapped)
+
+        // Step 2: Try to extract _id from the response
         const body = res.data;
         const reg = body?.data ?? body;
-        // Ensure _id is present (Mongoose may serialize as _id or id)
-        if (reg && !reg._id && reg.id) {
-            reg._id = reg.id;
+        const directId = reg?._id || reg?.id || body?._id;
+        if (directId) {
+            if (reg && !reg._id) reg._id = directId;
+            return reg as ArticleRegistration;
         }
-        if (!reg?._id) {
-            console.error('[registrationsApi.create] Unexpected response structure:', JSON.stringify(body).slice(0, 500));
+
+        // Step 3: Response didn't contain _id — query the server to find it
+        // This handles the case where the Next.js proxy strips/mangles the response
+        console.warn('[registrationsApi.create] Response missing _id, fetching by order...');
+        const byOrder = await apiClient.get(`${BASE}/by-order/${data.orderId}`);
+        const regs: ArticleRegistration[] = byOrder.data?.data ?? byOrder.data ?? [];
+        const match = regs.find(
+            (r) => r.operationIndex === (data.operationIndex ?? 0) && r.status === 'draft'
+        );
+        if (match?._id) {
+            return match;
         }
-        return reg as ArticleRegistration;
+
+        // Step 4: Last resort — return whatever we got, let caller handle the error
+        console.error('[registrationsApi.create] Could not resolve _id. Response:', JSON.stringify(body)?.slice(0, 300));
+        return (reg || {}) as ArticleRegistration;
     },
 
     /** List registrations */
