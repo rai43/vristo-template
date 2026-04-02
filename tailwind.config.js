@@ -71,6 +71,22 @@ module.exports = {
             boxShadow: {
                 '3xl': '0 2px 2px rgb(224 230 237 / 46%), 1px 6px 7px rgb(224 230 237 / 46%)',
             },
+            animation: {
+                'loading-bar': 'loading-bar 1.5s ease-in-out infinite',
+                slideUp: 'slideUp 0.3s ease-out',
+                'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            },
+            keyframes: {
+                slideUp: {
+                    '0%': { transform: 'translateY(100%)' },
+                    '100%': { transform: 'translateY(0)' },
+                },
+                'loading-bar': {
+                    '0%': { transform: 'translateX(-100%)' },
+                    '50%': { transform: 'translateX(200%)' },
+                    '100%': { transform: 'translateX(-100%)' },
+                },
+            },
             typography: ({ theme }) => ({
                 DEFAULT: {
                     css: {

@@ -1,822 +1,289 @@
 'use client';
-import Dropdown from '@/components/dropdown';
-import IconBinance from '@/components/icon/icon-binance';
-import IconBitcoin from '@/components/icon/icon-bitcoin';
-import IconCircleCheck from '@/components/icon/icon-circle-check';
-import IconEthereum from '@/components/icon/icon-ethereum';
-import IconEye from '@/components/icon/icon-eye';
-import IconHorizontalDots from '@/components/icon/icon-horizontal-dots';
-import IconInfoCircle from '@/components/icon/icon-info-circle';
-import IconLitecoin from '@/components/icon/icon-litecoin';
-import IconSolana from '@/components/icon/icon-solana';
-import IconTether from '@/components/icon/icon-tether';
-import { IRootState } from '@/store';
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import React, { useEffect, useState } from 'react';
-import ReactApexChart from 'react-apexcharts';
-import { useSelector } from 'react-redux';
+import { useRouter } from 'next/navigation';
+import { getDashboardMonthlyRevenue, getDashboardStats } from '@/lib/api/dashboard';
+import { getOrders } from '@/lib/api/orders';
+import { useAuth } from '@/hooks/useAuth';
+import { useOperationalPeriod } from '@/hooks/useOperationalPeriod';
+import PeriodSelector from '@/components/common/PeriodSelector';
+
+const ApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
+
+const money = (n: number) => n.toLocaleString('fr-FR') + ' F';
+const pct = (a: number, b: number) => (b === 0 ? 0 : Math.round((a / b) * 100));
+
+const Card = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
+    <div className={`rounded-xl border border-slate-200/60 bg-white shadow-sm dark:border-slate-700/50 dark:bg-[#1a2234] ${className}`}>{children}</div>
+);
+
+const KPICard = ({ label, value, sub, accent = 'text-slate-800 dark:text-white' }: { label: string; value: string; sub?: string; accent?: string }) => (
+    <Card className="p-5">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{label}</p>
+        <p className={`mt-2 text-2xl font-bold ${accent}`}>{value}</p>
+        {sub && <p className="mt-1 text-xs text-slate-400">{sub}</p>}
+    </Card>
+);
 
 const ComponentsDashboardFinance = () => {
-    const [isMounted, setIsMounted] = useState(false);
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
+    const { isAdmin } = useAuth();
+    const router = useRouter();
 
-    //bitcoinoption
-    const bitcoin: any = {
-        series: [
-            {
-                data: [21, 9, 36, 12, 44, 25, 59, 41, 25, 66],
-            },
-        ],
-        options: {
-            chart: {
-                height: 45,
-                type: 'line',
-                sparkline: {
-                    enabled: true,
-                },
-            },
-            stroke: {
-                width: 2,
-            },
-            markers: {
-                size: 0,
-            },
-            colors: ['#00ab55'],
-            grid: {
-                padding: {
-                    top: 0,
-                    bottom: 0,
-                    left: 0,
-                },
-            },
-            tooltip: {
-                x: {
-                    show: false,
-                },
-                y: {
-                    title: {
-                        formatter: () => {
-                            return '';
-                        },
-                    },
-                },
-            },
-            responsive: [
-                {
-                    breakPoint: 576,
-                    options: {
-                        chart: {
-                            height: 95,
-                        },
-                        grid: {
-                            padding: {
-                                top: 45,
-                                bottom: 0,
-                                left: 0,
-                            },
-                        },
-                    },
-                },
-            ],
-        },
-    };
+    const periodHook = useOperationalPeriod({ defaultToAll: true });
+    const dateFrom = periodHook.dateFrom;
+    const dateTo = periodHook.dateTo;
+    const year = new Date().getFullYear();
 
-    //ethereumoption
-    const ethereum: any = {
-        series: [
-            {
-                data: [44, 25, 59, 41, 66, 25, 21, 9, 36, 12],
-            },
-        ],
-        options: {
-            chart: {
-                height: 45,
-                type: 'line',
-                sparkline: {
-                    enabled: true,
-                },
-            },
-            stroke: {
-                width: 2,
-            },
-            markers: {
-                size: 0,
-            },
-            colors: ['#e7515a'],
-            grid: {
-                padding: {
-                    top: 0,
-                    bottom: 0,
-                    left: 0,
-                },
-            },
-            tooltip: {
-                x: {
-                    show: false,
-                },
-                y: {
-                    title: {
-                        formatter: () => {
-                            return '';
-                        },
-                    },
-                },
-            },
-            responsive: [
-                {
-                    breakPoint: 576,
-                    options: {
-                        chart: {
-                            height: 95,
-                        },
-                        grid: {
-                            padding: {
-                                top: 45,
-                                bottom: 0,
-                                left: 0,
-                            },
-                        },
-                    },
-                },
-            ],
-        },
-    };
+    const { data: statsData, isLoading } = useQuery({
+        queryKey: ['dashboard', 'finance', dateFrom, dateTo],
+        queryFn: () => getDashboardStats({ dateFrom, dateTo }),
+        staleTime: 60_000,
+        enabled: isAdmin,
+    });
 
-    //litecoinoption
-    const litecoin: any = {
-        series: [
-            {
-                data: [9, 21, 36, 12, 66, 25, 44, 25, 41, 59],
-            },
-        ],
-        options: {
-            chart: {
-                height: 45,
-                type: 'line',
-                sparkline: {
-                    enabled: true,
-                },
-            },
-            stroke: {
-                width: 2,
-            },
-            markers: {
-                size: 0,
-            },
-            colors: ['#00ab55'],
-            grid: {
-                padding: {
-                    top: 0,
-                    bottom: 0,
-                    left: 0,
-                },
-            },
-            tooltip: {
-                x: {
-                    show: false,
-                },
-                y: {
-                    title: {
-                        formatter: () => {
-                            return '';
-                        },
-                    },
-                },
-            },
-            responsive: [
-                {
-                    breakPoint: 576,
-                    options: {
-                        chart: {
-                            height: 95,
-                        },
-                        grid: {
-                            padding: {
-                                top: 45,
-                                bottom: 0,
-                                left: 0,
-                            },
-                        },
-                    },
-                },
-            ],
-        },
-    };
+    const { data: monthlyData } = useQuery({
+        queryKey: ['dashboard', 'monthly', year],
+        queryFn: () => getDashboardMonthlyRevenue({ year }),
+        staleTime: 120_000,
+        enabled: isAdmin,
+    });
 
-    //binanceoption
-    const binance: any = {
-        series: [
-            {
-                data: [25, 44, 25, 59, 41, 21, 36, 12, 19, 9],
-            },
-        ],
-        options: {
-            chart: {
-                height: 45,
-                type: 'line',
-                sparkline: {
-                    enabled: true,
-                },
-            },
-            stroke: {
-                width: 2,
-            },
-            markers: {
-                size: 0,
-            },
-            colors: ['#e7515a'],
-            grid: {
-                padding: {
-                    top: 0,
-                    bottom: 0,
-                    left: 0,
-                },
-            },
-            tooltip: {
-                x: {
-                    show: false,
-                },
-                y: {
-                    title: {
-                        formatter: () => {
-                            return '';
-                        },
-                    },
-                },
-            },
-            responsive: [
-                {
-                    breakPoint: 576,
-                    options: {
-                        chart: {
-                            height: 95,
-                        },
-                        grid: {
-                            padding: {
-                                top: 45,
-                                bottom: 0,
-                                left: 0,
-                            },
-                        },
-                    },
-                },
-            ],
-        },
-    };
+    const { data: ordersRaw } = useQuery({
+        queryKey: ['orders', 'finance', dateFrom, dateTo],
+        queryFn: () => getOrders({ limit: 500, startDate: dateFrom, endDate: dateTo }),
+        staleTime: 60_000,
+        enabled: isAdmin,
+    });
 
-    //tetheroption
-    const tether: any = {
-        series: [
-            {
-                data: [21, 59, 41, 44, 25, 66, 9, 36, 25, 12],
-            },
-        ],
-        options: {
-            chart: {
-                height: 45,
-                type: 'line',
-                sparkline: {
-                    enabled: true,
-                },
-            },
-            stroke: {
-                width: 2,
-            },
-            markers: {
-                size: 0,
-            },
-            colors: ['#00ab55'],
-            grid: {
-                padding: {
-                    top: 0,
-                    bottom: 0,
-                    left: 0,
-                },
-            },
-            tooltip: {
-                x: {
-                    show: false,
-                },
-                y: {
-                    title: {
-                        formatter: () => {
-                            return '';
-                        },
-                    },
-                },
-            },
-            responsive: [
-                {
-                    breakPoint: 576,
-                    options: {
-                        chart: {
-                            height: 95,
-                        },
-                        grid: {
-                            padding: {
-                                top: 45,
-                                bottom: 0,
-                                left: 0,
-                            },
-                        },
-                    },
-                },
-            ],
-        },
-    };
-
-    //solanaoption
-    const solana: any = {
-        series: [
-            {
-                data: [21, -9, 36, -12, 44, 25, 59, -41, 66, -25],
-            },
-        ],
-        options: {
-            chart: {
-                height: 45,
-                type: 'line',
-                sparkline: {
-                    enabled: true,
-                },
-            },
-            stroke: {
-                width: 2,
-            },
-            markers: {
-                size: 0,
-            },
-            colors: ['#e7515a'],
-            grid: {
-                padding: {
-                    top: 0,
-                    bottom: 0,
-                    left: 0,
-                },
-            },
-            tooltip: {
-                x: {
-                    show: false,
-                },
-                y: {
-                    title: {
-                        formatter: () => {
-                            return '';
-                        },
-                    },
-                },
-            },
-            responsive: [
-                {
-                    breakPoint: 576,
-                    options: {
-                        chart: {
-                            height: 95,
-                        },
-                        grid: {
-                            padding: {
-                                top: 45,
-                                bottom: 0,
-                                left: 0,
-                            },
-                        },
-                    },
-                },
-            ],
-        },
-    };
-
-    const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl';
-
-    return (
-        <div>
-            <ul className="flex space-x-2 rtl:space-x-reverse">
-                <li>
-                    <Link href="/" className="text-primary hover:underline">
-                        Dashboard
-                    </Link>
-                </li>
-                <li className="before:content-['/'] ltr:before:mr-2 rtl:before:ml-2">
-                    <span>Finance</span>
-                </li>
-            </ul>
-            <div className="pt-5">
-                <div className="mb-6 grid grid-cols-1 gap-6 text-white sm:grid-cols-2 xl:grid-cols-4">
-                    <div className="panel bg-gradient-to-r from-cyan-500 to-cyan-400">
-                        <div className="flex justify-between">
-                            <div className="text-md font-semibold ltr:mr-1 rtl:ml-1">Users Visit</div>
-                            <div className="dropdown">
-                                <Dropdown
-                                    offset={[0, 5]}
-                                    placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                                    btnClassName="hover:opacity-80"
-                                    button={<IconHorizontalDots className="opacity-70 hover:opacity-80" />}
-                                >
-                                    <ul className="text-black dark:text-white-dark">
-                                        <li>
-                                            <button type="button">View Report</button>
-                                        </li>
-                                        <li>
-                                            <button type="button">Edit Report</button>
-                                        </li>
-                                    </ul>
-                                </Dropdown>
-                            </div>
-                        </div>
-                        <div className="mt-5 flex items-center">
-                            <div className="text-3xl font-bold ltr:mr-3 rtl:ml-3"> $170.46 </div>
-                            <div className="badge bg-white/30">+ 2.35% </div>
-                        </div>
-                        <div className="mt-5 flex items-center font-semibold">
-                            <IconEye className="shrink-0 ltr:mr-2 rtl:ml-2" />
-                            Last Week 44,700
-                        </div>
-                    </div>
-
-                    {/* Sessions */}
-                    <div className="panel bg-gradient-to-r from-violet-500 to-violet-400">
-                        <div className="flex justify-between">
-                            <div className="text-md font-semibold ltr:mr-1 rtl:ml-1">Sessions</div>
-                            <div className="dropdown">
-                                <Dropdown
-                                    offset={[0, 5]}
-                                    placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                                    btnClassName="hover:opacity-80"
-                                    button={<IconHorizontalDots className="opacity-70 hover:opacity-80" />}
-                                >
-                                    <ul className="text-black dark:text-white-dark">
-                                        <li>
-                                            <button type="button">View Report</button>
-                                        </li>
-                                        <li>
-                                            <button type="button">Edit Report</button>
-                                        </li>
-                                    </ul>
-                                </Dropdown>
-                            </div>
-                        </div>
-                        <div className="mt-5 flex items-center">
-                            <div className="text-3xl font-bold ltr:mr-3 rtl:ml-3"> 74,137 </div>
-                            <div className="badge bg-white/30">- 2.35% </div>
-                        </div>
-                        <div className="mt-5 flex items-center font-semibold">
-                            <IconEye className="shrink-0 ltr:mr-2 rtl:ml-2" />
-                            Last Week 84,709
-                        </div>
-                    </div>
-
-                    {/*  Time On-Site */}
-                    <div className="panel bg-gradient-to-r from-blue-500 to-blue-400">
-                        <div className="flex justify-between">
-                            <div className="text-md font-semibold ltr:mr-1 rtl:ml-1">Time On-Site</div>
-                            <div className="dropdown">
-                                <Dropdown
-                                    offset={[0, 5]}
-                                    placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                                    btnClassName="hover:opacity-80"
-                                    button={<IconHorizontalDots className="opacity-70 hover:opacity-80" />}
-                                >
-                                    <ul className="text-black dark:text-white-dark">
-                                        <li>
-                                            <button type="button">View Report</button>
-                                        </li>
-                                        <li>
-                                            <button type="button">Edit Report</button>
-                                        </li>
-                                    </ul>
-                                </Dropdown>
-                            </div>
-                        </div>
-                        <div className="mt-5 flex items-center">
-                            <div className="text-3xl font-bold ltr:mr-3 rtl:ml-3"> 38,085 </div>
-                            <div className="badge bg-white/30">+ 1.35% </div>
-                        </div>
-                        <div className="mt-5 flex items-center font-semibold">
-                            <IconEye className="shrink-0 ltr:mr-2 rtl:ml-2" />
-                            Last Week 37,894
-                        </div>
-                    </div>
-
-                    {/* Bounce Rate */}
-                    <div className="panel bg-gradient-to-r from-fuchsia-500 to-fuchsia-400">
-                        <div className="flex justify-between">
-                            <div className="text-md font-semibold ltr:mr-1 rtl:ml-1">Bounce Rate</div>
-                            <div className="dropdown">
-                                <Dropdown
-                                    offset={[0, 5]}
-                                    placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                                    btnClassName="hover:opacity-80"
-                                    button={<IconHorizontalDots className="opacity-70 hover:opacity-80" />}
-                                >
-                                    <ul className="text-black dark:text-white-dark">
-                                        <li>
-                                            <button type="button">View Report</button>
-                                        </li>
-                                        <li>
-                                            <button type="button">Edit Report</button>
-                                        </li>
-                                    </ul>
-                                </Dropdown>
-                            </div>
-                        </div>
-                        <div className="mt-5 flex items-center">
-                            <div className="text-3xl font-bold ltr:mr-3 rtl:ml-3"> 49.10% </div>
-                            <div className="badge bg-white/30">- 0.35% </div>
-                        </div>
-                        <div className="mt-5 flex items-center font-semibold">
-                            <IconEye className="shrink-0 ltr:mr-2 rtl:ml-2" />
-                            Last Week 50.01%
-                        </div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                    {/*  Favorites  */}
-                    <div>
-                        <div className="mb-5 flex items-center font-bold">
-                            <span className="text-lg">Favorites</span>
-                            <button type="button" className="text-primary hover:text-black ltr:ml-auto rtl:mr-auto dark:hover:text-white-dark">
-                                See All
-                            </button>
-                        </div>
-                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3 md:mb-5">
-                            {/*  Bitcoin  */}
-                            <div className="panel">
-                                <div className="mb-5 flex items-center font-semibold">
-                                    <div className="grid h-10 w-10 shrink-0 place-content-center rounded-full">
-                                        <IconBitcoin />
-                                    </div>
-                                    <div className="ltr:ml-2 rtl:mr-2">
-                                        <h6 className="text-dark dark:text-white-light">BTC</h6>
-                                        <p className="text-xs text-white-dark">Bitcoin</p>
-                                    </div>
-                                </div>
-                                <div className="mb-5">{isMounted && <ReactApexChart series={bitcoin.series} options={bitcoin.options} type="line" height={45} width={'100%'} />}</div>
-                                <div className="flex items-center justify-between text-base font-bold">
-                                    $20,000 <span className="text-sm font-normal text-success">+0.25%</span>
-                                </div>
-                            </div>
-                            {/*  Ethereum*/}
-                            <div className="panel">
-                                <div className="mb-5 flex items-center font-semibold">
-                                    <div className="grid h-10 w-10 shrink-0 place-content-center rounded-full bg-warning p-2">
-                                        <IconEthereum />
-                                    </div>
-                                    <div className="ltr:ml-2 rtl:mr-2">
-                                        <h6 className="text-dark dark:text-white-light">ETH</h6>
-                                        <p className="text-xs text-white-dark">Ethereum</p>
-                                    </div>
-                                </div>
-                                <div className="mb-5">{isMounted && <ReactApexChart series={ethereum.series} options={ethereum.options} type="line" height={45} width={'100%'} />}</div>
-                                <div className="flex items-center justify-between text-base font-bold">
-                                    $21,000 <span className="text-sm font-normal text-danger">-1.25%</span>
-                                </div>
-                            </div>
-                            {/*  Litecoin*/}
-                            <div className="panel">
-                                <div className="mb-5 flex items-center font-semibold">
-                                    <div className="grid h-10 w-10 shrink-0 place-content-center rounded-full">
-                                        <IconLitecoin />
-                                    </div>
-                                    <div className="ltr:ml-2 rtl:mr-2">
-                                        <h6 className="text-dark dark:text-white-light">LTC</h6>
-                                        <p className="text-xs text-white-dark">Litecoin</p>
-                                    </div>
-                                </div>
-                                <div className="mb-5">{isMounted && <ReactApexChart series={litecoin.series} options={litecoin.options} type="line" height={45} width={'100%'} />}</div>
-                                <div className="flex items-center justify-between text-base font-bold">
-                                    $11,657 <span className="text-sm font-normal text-success">+0.25%</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {/*  Prices  */}
-                    <div>
-                        <div className="mb-5 flex items-center font-bold">
-                            <span className="text-lg">Live Prices</span>
-                            <button type="button" className="text-primary hover:text-black ltr:ml-auto rtl:mr-auto dark:hover:text-white-dark">
-                                See All
-                            </button>
-                        </div>
-                        <div className="mb-6 grid grid-cols-1 gap-6 sm:grid-cols-3">
-                            {/*  Binance */}
-                            <div className="panel">
-                                <div className="mb-5 flex items-center font-semibold">
-                                    <div className="grid h-10 w-10 shrink-0 place-content-center rounded-full">
-                                        <IconBinance />
-                                    </div>
-                                    <div className="ltr:ml-2 rtl:mr-2">
-                                        <h6 className="text-dark dark:text-white-light">BNB</h6>
-                                        <p className="text-xs text-white-dark">Binance</p>
-                                    </div>
-                                </div>
-                                <div className="mb-5">{isMounted && <ReactApexChart series={binance.series} options={binance.options} type="line" height={45} width={'100%'} />}</div>
-                                <div className="flex items-center justify-between text-base font-bold">
-                                    $21,000 <span className="text-sm font-normal text-danger">-1.25%</span>
-                                </div>
-                            </div>
-                            {/*  Tether  */}
-                            <div className="panel">
-                                <div className="mb-5 flex items-center font-semibold">
-                                    <div className="grid h-10 w-10 shrink-0 place-content-center rounded-full">
-                                        <IconTether />
-                                    </div>
-                                    <div className="ltr:ml-2 rtl:mr-2">
-                                        <h6 className="text-dark dark:text-white-light">USDT</h6>
-                                        <p className="text-xs text-white-dark">Tether</p>
-                                    </div>
-                                </div>
-                                <div className="mb-5">{isMounted && <ReactApexChart series={tether.series} options={tether.options} type="line" height={45} width={'100%'} />}</div>
-                                <div className="flex items-center justify-between text-base font-bold">
-                                    $20,000 <span className="text-sm font-normal text-success">+0.25%</span>
-                                </div>
-                            </div>
-                            {/*  Solana */}
-                            <div className="panel">
-                                <div className="mb-5 flex items-center font-semibold">
-                                    <div className="grid h-10 w-10 shrink-0 place-content-center rounded-full bg-warning p-2">
-                                        <IconSolana />
-                                    </div>
-                                    <div className="ltr:ml-2 rtl:mr-2">
-                                        <h6 className="text-dark dark:text-white-light">SOL</h6>
-                                        <p className="text-xs text-white-dark">Solana</p>
-                                    </div>
-                                </div>
-                                <div className="mb-5">{isMounted && <ReactApexChart series={solana.series} options={solana.options} type="line" height={45} width={'100%'} />}</div>
-                                <div className="flex items-center justify-between text-base font-bold">
-                                    $21,000 <span className="text-sm font-normal text-danger">-1.25%</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                    <div className="grid gap-6 xl:grid-flow-row">
-                        {/*  Previous Statement  */}
-                        <div className="panel overflow-hidden">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <div className="text-lg font-bold">Previous Statement</div>
-                                    <div className="text-success"> Paid on June 27, 2022 </div>
-                                </div>
-                                <div className="dropdown">
-                                    <Dropdown
-                                        offset={[0, 5]}
-                                        placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                                        btnClassName="hover:opacity-80"
-                                        button={<IconHorizontalDots className="opacity-70 hover:opacity-80" />}
-                                    >
-                                        <ul>
-                                            <li>
-                                                <button type="button">View Report</button>
-                                            </li>
-                                            <li>
-                                                <button type="button">Edit Report</button>
-                                            </li>
-                                        </ul>
-                                    </Dropdown>
-                                </div>
-                            </div>
-                            <div className="relative mt-10">
-                                <div className="absolute -bottom-12 h-24 w-24 ltr:-right-12 rtl:-left-12">
-                                    <IconCircleCheck className="h-full w-full text-success opacity-20" />
-                                </div>
-                                <div className="grid grid-cols-2 gap-6 md:grid-cols-3">
-                                    <div>
-                                        <div className="text-primary">Card Limit</div>
-                                        <div className="mt-2 text-2xl font-semibold">$50,000.00</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-primary">Spent</div>
-                                        <div className="mt-2 text-2xl font-semibold">$15,000.00</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-primary">Minimum</div>
-                                        <div className="mt-2 text-2xl font-semibold">$2,500.00</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {/*  Current Statement */}
-                        <div className="panel overflow-hidden">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <div className="text-lg font-bold">Current Statement</div>
-                                    <div className="text-danger"> Must be paid before July 27, 2022 </div>
-                                </div>
-                                <div className="dropdown">
-                                    <Dropdown offset={[0, 5]} placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`} button={<IconHorizontalDots className="opacity-70 hover:opacity-80" />}>
-                                        <ul>
-                                            <li>
-                                                <button type="button">View Report</button>
-                                            </li>
-                                            <li>
-                                                <button type="button">Edit Report</button>
-                                            </li>
-                                        </ul>
-                                    </Dropdown>
-                                </div>
-                            </div>
-                            <div className="relative mt-10">
-                                <div className="absolute -bottom-12 h-24 w-24 ltr:-right-12 rtl:-left-12">
-                                    <IconInfoCircle className="h-full w-24 text-danger opacity-20" />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-6 md:grid-cols-3">
-                                    <div>
-                                        <div className="text-primary">Card Limit</div>
-                                        <div className="mt-2 text-2xl font-semibold">$50,000.00</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-primary">Spent</div>
-                                        <div className="mt-2 text-2xl font-semibold">$30,500.00</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-primary">Minimum</div>
-                                        <div className="mt-2 text-2xl font-semibold">$8,000.00</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/*  Recent Transactions  */}
-                    <div className="panel">
-                        <div className="mb-5 text-lg font-bold">Recent Transactions</div>
-                        <div className="table-responsive">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th className="ltr:rounded-l-md rtl:rounded-r-md">ID</th>
-                                        <th>DATE</th>
-                                        <th>NAME</th>
-                                        <th>AMOUNT</th>
-                                        <th className="text-center ltr:rounded-r-md rtl:rounded-l-md">STATUS</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td className="font-semibold">#01</td>
-                                        <td className="whitespace-nowrap">Oct 08, 2021</td>
-                                        <td className="whitespace-nowrap">Eric Page</td>
-                                        <td>$1,358.75</td>
-                                        <td className="text-center">
-                                            <span className="badge rounded-full bg-success/20 text-success hover:top-0">Completed</span>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td className="font-semibold">#02</td>
-                                        <td className="whitespace-nowrap">Dec 18, 2021</td>
-                                        <td className="whitespace-nowrap">Nita Parr</td>
-                                        <td>-$1,042.82</td>
-                                        <td className="text-center">
-                                            <span className="badge rounded-full bg-info/20 text-info hover:top-0">In Process</span>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td className="font-semibold">#03</td>
-                                        <td className="whitespace-nowrap">Dec 25, 2021</td>
-                                        <td className="whitespace-nowrap">Carl Bell</td>
-                                        <td>$1,828.16</td>
-                                        <td className="text-center">
-                                            <span className="badge rounded-full bg-danger/20 text-danger hover:top-0">Pending</span>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td className="font-semibold">#04</td>
-                                        <td className="whitespace-nowrap">Nov 29, 2021</td>
-                                        <td className="whitespace-nowrap">Dan Hart</td>
-                                        <td>$1,647.55</td>
-                                        <td className="text-center">
-                                            <span className="badge rounded-full bg-success/20 text-success hover:top-0">Completed</span>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td className="font-semibold">#05</td>
-                                        <td className="whitespace-nowrap">Nov 24, 2021</td>
-                                        <td className="whitespace-nowrap">Jake Ross</td>
-                                        <td>$927.43</td>
-                                        <td className="text-center">
-                                            <span className="badge rounded-full bg-success/20 text-success hover:top-0">Completed</span>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td className="font-semibold">#06</td>
-                                        <td className="whitespace-nowrap">Jan 26, 2022</td>
-                                        <td className="whitespace-nowrap">Anna Bell</td>
-                                        <td>$250.00</td>
-                                        <td className="text-center">
-                                            <span className="badge rounded-full bg-info/20 text-info hover:top-0">In Process</span>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+    // Restrict to admin and super_admin only
+    if (!isAdmin) {
+        return (
+            <div className="flex min-h-[60vh] flex-col items-center justify-center">
+                <div className="text-center">
+                    <p className="text-6xl">🔒</p>
+                    <h2 className="mt-4 text-xl font-bold text-slate-700 dark:text-white">Accès restreint</h2>
+                    <p className="mt-2 text-sm text-slate-500">Le tableau de bord financier est réservé aux administrateurs.</p>
+                    <button onClick={() => router.push('/apps/orders')} className="mt-6 rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-white">
+                        Aller aux commandes
+                    </button>
                 </div>
             </div>
+        );
+    }
+
+    const s = statsData?.data;
+    const orders: any[] = (ordersRaw as any)?.data?.data || [];
+    const monthly: any[] = (monthlyData as any)?.data || [];
+
+    const totalRevenue = s?.paymentStats?.totalAmount ?? 0;
+    const outstanding = s?.paymentStats?.outstandingAmount ?? 0;
+    const totalPayments = s?.paymentStats?.totalPayments ?? 0;
+    const collectionRate = pct(totalRevenue, totalRevenue + outstanding);
+    const byMethod: any[] = s?.paymentStats?.byMethod ?? [];
+
+    // outstanding by order
+    const unpaidOrders = orders.filter((o) => o.paymentStatus !== 'paid' && (o.totalPrice || 0) > (o.totalPaid || 0));
+    const unpaidTotal = unpaidOrders.reduce((s, o) => s + ((o.totalPrice || 0) - (o.totalPaid || 0)), 0);
+
+    // Revenue area chart
+    const areaChart: any = {
+        series: [{ name: 'Encaissements', data: monthly.map((m) => m.revenue || 0) }],
+        options: {
+            chart: {
+                type: 'area',
+                height: 220,
+                toolbar: { show: false },
+                fontFamily: 'inherit',
+                background: 'transparent',
+                sparkline: { enabled: false },
+            },
+            stroke: { curve: 'smooth', width: 2 },
+            fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.25, opacityTo: 0.02 } },
+            colors: ['#4361ee'],
+            dataLabels: { enabled: false },
+            xaxis: { categories: monthly.map((m) => m.month || ''), labels: { style: { fontSize: '10px' } } },
+            yaxis: {
+                labels: {
+                    formatter: (v: number) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)),
+                    style: { fontSize: '10px' },
+                },
+            },
+            grid: { borderColor: 'rgba(100,100,100,0.08)' },
+            tooltip: { y: { formatter: (v: number) => money(v) } },
+        },
+    };
+
+    // Payment methods donut
+    const methodChart: any = {
+        series: byMethod.map((m) => m.total || 0),
+        options: {
+            chart: { type: 'donut', height: 220, fontFamily: 'inherit', background: 'transparent' },
+            colors: ['#4361ee', '#00ab55', '#e2a03f', '#00bcd4', '#805dca'],
+            labels: byMethod.map((m) => m._id || 'Autre'),
+            legend: { position: 'bottom', fontSize: '11px' },
+            dataLabels: { enabled: false },
+            plotOptions: {
+                pie: {
+                    donut: {
+                        size: '68%',
+                        labels: { show: true, total: { show: true, label: 'Total', formatter: () => money(totalRevenue) } },
+                    },
+                },
+            },
+            stroke: { width: 2 },
+        },
+    };
+
+    if (isLoading)
+        return (
+            <div className="flex min-h-[60vh] items-center justify-center">
+                <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/30 border-t-primary" />
+            </div>
+        );
+
+    return (
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Finance</h1>
+                    <p className="mt-0.5 text-sm text-slate-400">Revenus, paiements et recouvrement</p>
+                </div>
+            </div>
+
+            {/* Period selector */}
+            <div className="rounded-xl border border-slate-200/60 bg-white px-6 py-4 shadow-sm dark:border-slate-700/50 dark:bg-[#1a2234]">
+                <PeriodSelector
+                    periods={periodHook.periods}
+                    selectedPeriodId={periodHook.selectedPeriodId}
+                    onSelectPeriod={periodHook.selectPeriod}
+                    dateFrom={dateFrom}
+                    dateTo={dateTo}
+                    onDateFromChange={(v) => periodHook.setCustomDates(v, dateTo)}
+                    onDateToChange={(v) => periodHook.setCustomDates(dateFrom, v)}
+                    isCustom={periodHook.isCustom}
+                    onClearCustom={periodHook.clearCustomRange}
+                    isLoading={periodHook.isLoading}
+                    isAllPeriods={periodHook.isAllPeriods}
+                    compact
+                />
+            </div>
+
+            {/* KPIs */}
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                <KPICard label="Encaissé" value={money(totalRevenue)} sub={`${totalPayments} paiement${totalPayments !== 1 ? 's' : ''}`} />
+                <KPICard
+                    label="Impayés"
+                    value={money(outstanding)}
+                    sub={`${unpaidOrders.length} commande${unpaidOrders.length !== 1 ? 's' : ''} concernée${unpaidOrders.length !== 1 ? 's' : ''}`}
+                    accent={outstanding > 0 ? 'text-red-500' : 'text-emerald-500'}
+                />
+                <KPICard
+                    label="Taux de recouvrement"
+                    value={`${collectionRate}%`}
+                    sub={collectionRate >= 90 ? 'Excellent' : collectionRate >= 70 ? 'Bien' : 'À améliorer'}
+                    accent={collectionRate >= 90 ? 'text-emerald-500' : collectionRate >= 70 ? 'text-amber-500' : 'text-red-500'}
+                />
+                <KPICard label="Chiffre d'affaires" value={money(totalRevenue + outstanding)} sub={`Facturé (encaissé + impayé)`} />
+            </div>
+
+            {/* Charts */}
+            <div className="grid gap-6 lg:grid-cols-5">
+                <Card className="p-5 lg:col-span-3">
+                    <h3 className="mb-4 font-semibold text-slate-800 dark:text-white">Encaissements mensuels — {year}</h3>
+                    {monthly.length > 0 ? (
+                        <ApexChart series={areaChart.series} options={areaChart.options} type="area" height={220} />
+                    ) : (
+                        <div className="flex h-[220px] items-center justify-center text-sm text-slate-400">Aucune donnée</div>
+                    )}
+                </Card>
+                <Card className="p-5 lg:col-span-2">
+                    <h3 className="mb-4 font-semibold text-slate-800 dark:text-white">Répartition par mode</h3>
+                    {byMethod.length > 0 ? (
+                        <ApexChart series={methodChart.series} options={methodChart.options} type="donut" height={220} />
+                    ) : (
+                        <div className="flex h-[220px] items-center justify-center text-sm text-slate-400">Aucun paiement</div>
+                    )}
+                </Card>
+            </div>
+
+            {/* Payment methods breakdown */}
+            {byMethod.length > 0 && (
+                <Card>
+                    <div className="border-b border-slate-100 px-5 py-4 dark:border-slate-700/50">
+                        <h3 className="font-semibold text-slate-800 dark:text-white">Détail par mode de paiement</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b border-slate-50 dark:border-slate-800">
+                                    <th className="px-5 py-2.5 text-left text-xs font-semibold text-slate-400">Mode</th>
+                                    <th className="px-5 py-2.5 text-center text-xs font-semibold text-slate-400">Transactions</th>
+                                    <th className="px-5 py-2.5 text-right text-xs font-semibold text-slate-400">Montant total</th>
+                                    <th className="px-5 py-2.5 text-right text-xs font-semibold text-slate-400">% du total</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                                {byMethod
+                                    .sort((a, b) => b.total - a.total)
+                                    .map((m, i) => (
+                                        <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                                            <td className="px-5 py-2.5 font-semibold text-slate-700 dark:text-slate-200">{m._id || 'Autre'}</td>
+                                            <td className="px-5 py-2.5 text-center text-slate-500">{m.count}</td>
+                                            <td className="px-5 py-2.5 text-right font-bold text-slate-700 dark:text-slate-200">{money(m.total)}</td>
+                                            <td className="px-5 py-2.5 text-right text-slate-400">{pct(m.total, totalRevenue)}%</td>
+                                        </tr>
+                                    ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </Card>
+            )}
+
+            {/* Unpaid orders */}
+            {unpaidOrders.length > 0 && (
+                <Card>
+                    <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 dark:border-slate-700/50">
+                        <h3 className="font-semibold text-slate-800 dark:text-white">Commandes impayées / partielles</h3>
+                        <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-bold text-red-600 dark:bg-red-500/10">{money(unpaidTotal)} à recouvrer</span>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b border-slate-50 dark:border-slate-800">
+                                    <th className="px-5 py-2.5 text-left text-xs font-semibold text-slate-400">Client</th>
+                                    <th className="px-5 py-2.5 text-left text-xs font-semibold text-slate-400">N° Commande</th>
+                                    <th className="px-5 py-2.5 text-right text-xs font-semibold text-slate-400">Total</th>
+                                    <th className="px-5 py-2.5 text-right text-xs font-semibold text-slate-400">Payé</th>
+                                    <th className="px-5 py-2.5 text-right text-xs font-semibold text-slate-400">Restant</th>
+                                    <th className="w-10" />
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                                {unpaidOrders.slice(0, 10).map((o: any) => {
+                                    const rest = (o.totalPrice || 0) - (o.totalPaid || 0);
+                                    return (
+                                        <tr key={o._id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                                            <td className="px-5 py-2.5 font-medium text-slate-700 dark:text-slate-200">{o.customerId?.name || '—'}</td>
+                                            <td className="px-5 py-2.5 font-mono text-[10px] text-slate-400">{o.orderId}</td>
+                                            <td className="px-5 py-2.5 text-right text-slate-600 dark:text-slate-300">{money(o.totalPrice || 0)}</td>
+                                            <td className="px-5 py-2.5 text-right text-emerald-600">{money(o.totalPaid || 0)}</td>
+                                            <td className="px-5 py-2.5 text-right font-bold text-red-500">{money(rest)}</td>
+                                            <td className="px-3">
+                                                <Link href={`/apps/orders/view?id=${o.orderId}`} className="text-xs text-primary hover:underline">
+                                                    →
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </Card>
+            )}
         </div>
     );
 };

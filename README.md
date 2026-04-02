@@ -1,38 +1,66 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# MIRAI Services — Frontend
 
-## Getting Started
+Next.js 14 (App Router) + Tailwind CSS + Redux.
 
-First, run the development server:
+## Architecture
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
+```
+view/
+├── app/                        # Next.js App Router
+│   ├── layout.tsx              # Root layout (providers, theme)
+│   ├── (auth)/                 # Auth pages (login, register)
+│   ├── (defaults)/             # Main app pages
+│   │   ├── dashboard/          # Dashboard views
+│   │   ├── apps/               # Chat, customers, invoice, calendar
+│   │   └── users/profile/      # Client profile view
+│   └── management/             # Admin management pages
+│
+├── components/
+│   ├── apps/
+│   │   ├── chat/               # Chat UI (channels, messages, WA)
+│   │   ├── customers/          # Customer table, forms, WhatsApp dialog
+│   │   └── invoice/            # Invoice PDF generator
+│   ├── dashboard/              # Dashboard widgets & charts
+│   ├── layouts/                # Sidebar, header, footer
+│   ├── auth/                   # Login/register forms
+│   └── common/                 # Shared UI components
+│
+├── lib/
+│   ├── api.ts                  # Axios client (interceptors, auth)
+│   └── api/                    # API functions by domain
+│
+├── hooks/
+│   ├── useAuth.ts              # Auth state hook
+│   └── useChatSocket.ts        # WebSocket chat hook
+│
+├── store/                      # Redux state management
+├── public/                     # Static assets, locales
+├── styles/                     # CSS (Tailwind + vendor)
+└── types/                      # TypeScript declarations
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Key Pages
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+| Route                   | Description                |
+|-------------------------|----------------------------|
+| `/`                     | Login                      |
+| `/dashboard`            | Vue d'ensemble             |
+| `/dashboard/commercial` | Gestion commerciale        |
+| `/dashboard/finance`    | Gestion financière         |
+| `/dashboard/operations` | Tableau de bord opérations |
+| `/apps/customers`       | Gestion des clients        |
+| `/apps/chat`            | Chat interne + WhatsApp    |
+| `/apps/invoice/preview` | Aperçu facture             |
+| `/users/profile?id=`    | Profil client              |
+| `/management/users`     | Gestion des utilisateurs   |
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+## Features
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+- **Dark mode** — Full dark theme support
+- **i18n** — French (default) + English
+- **Real-time chat** — Socket.IO with typing indicators, reactions, unread badges
+- **WhatsApp** — Send messages to clients via Infobip
+- **PDF invoices** — Generate invoices for subscriptions and à la carte orders
+- **Dashboard** — 4 dashboard views with charts (ApexCharts)
+- **Responsive** — Mobile-friendly sidebar + tables
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.

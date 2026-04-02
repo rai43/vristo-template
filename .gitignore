@@ -26,7 +26,10 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # local env files
+# Keep .env.development and .env.production as templates
+# Only ignore .env.local and other .local variants
 .env*.local
+.env.local
 
 # vercel
 .vercel
